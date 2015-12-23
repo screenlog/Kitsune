@@ -25,6 +25,16 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 	
 	public $loadedPlugins = array();
 	
+	// Add custom packet handlers, or new packet handlers that include '|'
+	// in the packet data from the client here
+	private $allowedHandlers = array(
+		"nx#bimp",
+		"bi#ack",
+		"p#bipa",
+		"g#uiss",
+		"g#uic"
+	);
+	
 	protected function __construct($loadPlugins = true, $pluginsDirectory = "Kitsune/ClubPenguin/Plugins/") {
 		$tempDatabase = new Kitsune\Database();
 		unset($tempDatabase);
@@ -276,9 +286,13 @@ abstract class ClubPenguin extends Kitsune\Kitsune {
 		// p#getdigcooldown is received before xml sometimes.. dunno why
 		if($this->penguins[$socket]->identified == true || Packet::$Handler == "p#getdigcooldown") {
 
-			// Stop any kind of string injection
-			if(strpos(Packet::$Handler, '|')) {
-				return $this->removePenguin($this->penguins[$socket]);
+			// Stop any kind of string injection - Except allowedHandlers, which can be
+			// checked in the function itself.
+			if(!in_array(Packet::$Handler, $this->allowedHandlers)) {
+				if(strpos(Packet::$RawData, '|')) {
+					// Don't continue, or disconnect
+					return;
+				}
 			}
 
 			// Bot detection - there's probably a better way of doing this
